@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EssentiaDLP": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
