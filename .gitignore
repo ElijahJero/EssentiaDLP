@@ -3,6 +3,12 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Local runtime data / copied Essentia graphs (keep *.json labels if needed)
+EssentiaDLP/data/
+data/
+EssentiaDLP/analyzer/models/*.pb
+EssentiaDLP/models/*.pb
+
 # User-specific files
 *.rsuser
 *.suo

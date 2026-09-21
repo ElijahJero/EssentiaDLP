@@ -1,10 +1,17 @@
 {
   "profiles": {
     "EssentiaDLP": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:5080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     },
     "Container (Dockerfile)": {
-      "commandName": "Docker"
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "publishAllPorts": true,
+      "httpPort": 8080
     }
   }
 }

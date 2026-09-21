@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Essentia DLP</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Essentia DLP</h1>
+    <p class="sub">Galaxy Music profiles · ephemeral downloads</p>
+    <div id="busy" class="pill idle">Idle</div>
+  </header>
+  <nav>
+    <button data-tab="run" class="active">Run</button>
+    <button data-tab="failed">Failed</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <main>
+    <section id="tab-run" class="tab">
+      <div class="card">
+        <h2>Galaxy pending tracks</h2>
+        <p>Fetch tracks waiting for an audio profile, download, analyze, upload, then delete the file.</p>
+        <button id="galaxy-btn" class="primary">Profile pending Galaxy tracks</button>
+      </div>
+      <div class="card">
+        <h2>Single song</h2>
+        <form id="single-form">
+          <label>Song name or URL
+            <input name="query" placeholder="Artist - Title or YouTube / Spotify URL" required />
+          </label>
+          <button type="submit" class="primary">Download &amp; analyze</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Log</h2>
+        <pre id="log"></pre>
+      </div>
+    </section>
+    <section id="tab-failed" class="tab hidden">
+      <div class="card">
+        <h2>Failed downloads</h2>
+        <p>Upload a file or paste a URL. Audio is deleted after analysis.</p>
+        <div id="failed-empty" class="muted">No failed tracks.</div>
+        <table id="failed-table" class="hidden">
+          <thead>
+            <tr><th>Song</th><th>Error</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="tab-settings" class="tab hidden">
+      <div class="card">
+        <h2>Galaxy &amp; schedule</h2>
+        <form id="settings-form">
+          <label>Galaxy URL
+            <input name="url" placeholder="http://localhost:5107" />
+          </label>
+          <label>Write API key
+            <input name="apiKey" type="password" autocomplete="off" />
+          </label>
+          <div class="row">
+            <label>Max songs (0 = unlimited)
+              <input name="maxSongs" type="number" min="0" />
+            </label>
+            <label>Max per minute (0 = unlimited)
+              <input name="maxSongsPerMinute" type="number" min="0" />
+            </label>
+          </div>
+          <label>Cron (UTC, empty = off)
+            <input name="cron" placeholder="0 */6 * * *" />
+          </label>
+          <p class="muted">If a run is already in progress, cron ticks do nothing.</p>
+          <button type="submit" class="primary">Save settings</button>
+          <span id="settings-msg" class="muted"></span>
+        </form>
+      </div>
+    </section>
+  </main>
+  <dialog id="url-dialog">
+    <form method="dialog" id="url-form">
+      <h3>Download from URL</h3>
+      <input name="url" placeholder="https://…" required />
+      <menu>
+        <button value="cancel">Cancel</button>
+        <button value="ok" class="primary">Download</button>
+      </menu>
+    </form>
+  </dialog>
+  <script src="/app.js"></script>
+</body>
+</html>

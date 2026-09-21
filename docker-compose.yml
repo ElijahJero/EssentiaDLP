@@ -1,0 +1,18 @@
+services:
+  essentia:
+    build:
+      context: .
+      dockerfile: EssentiaDLP/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - essentia-data:/data
+      - ./EssentiaDLP/analyzer/models:/app/analyzer/models:ro
+    environment:
+      DataDirectory: /data
+      Python: python3
+      AnalyzerScript: /app/analyzer/tag_library.py
+      ModelsDirectory: /app/analyzer/models
+
+volumes:
+  essentia-data:
