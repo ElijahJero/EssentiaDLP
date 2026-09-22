@@ -5,13 +5,13 @@ USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip python3-venv ffmpeg nodejs \
     && rm -rf /var/lib/apt/lists/*
-ENV ASPNETCORE_HTTP_PORTS=8080
+ENV ASPNETCORE_HTTP_PORTS=8182
 ENV DataDirectory=/data
 ENV Python=python3
 ENV AnalyzerScript=/app/analyzer/tag_library.py
 ENV ModelsDirectory=/app/analyzer/models
 WORKDIR /app
-EXPOSE 8080
+EXPOSE 8182
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
