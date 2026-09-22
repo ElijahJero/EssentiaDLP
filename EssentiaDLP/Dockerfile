@@ -27,6 +27,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY EssentiaDLP/analyzer /app/analyzer
 RUN python3 -m pip install --break-system-packages --no-cache-dir -r /app/analyzer/requirements.txt \
+    && python3 /app/analyzer/download_models.py /app/analyzer/models \
     && mkdir -p /data \
     && chown -R $APP_UID /app /data
 USER $APP_UID

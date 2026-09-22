@@ -47,11 +47,22 @@ def _load_json(stem):
         return json.load(f)
 
 
+def _graph(name: str) -> str:
+    path = MODELS_DIR / name
+    if not path.is_file() or path.stat().st_size == 0:
+        raise FileNotFoundError(
+            f"Tensorflow graph not found: {path}. "
+            "The .pb weights are not in git; run analyzer/download_models.py "
+            "or rebuild the image so the models are baked in."
+        )
+    return str(path)
+
+
 def _softmax_head(stem):
     from essentia.standard import TensorflowPredict2D
 
     return TensorflowPredict2D(
-        graphFilename=str(MODELS_DIR / f"{stem}.pb"),
+        graphFilename=_graph(f"{stem}.pb"),
         input="model/Placeholder",
         output="model/Softmax",
     )
@@ -61,7 +72,7 @@ def _identity_head(stem):
     from essentia.standard import TensorflowPredict2D
 
     return TensorflowPredict2D(
-        graphFilename=str(MODELS_DIR / f"{stem}.pb"),
+        graphFilename=_graph(f"{stem}.pb"),
         input="model/Placeholder",
         output="model/Identity",
     )
@@ -71,7 +82,7 @@ def _sigmoid_head(stem):
     from essentia.standard import TensorflowPredict2D
 
     return TensorflowPredict2D(
-        graphFilename=str(MODELS_DIR / f"{stem}.pb"),
+        graphFilename=_graph(f"{stem}.pb"),
         input="model/Placeholder",
         output="model/Sigmoid",
     )
@@ -86,11 +97,11 @@ def _ensure_models():
     from essentia.standard import TensorflowPredict2D, TensorflowPredictEffnetDiscogs
 
     _embedding_model = TensorflowPredictEffnetDiscogs(
-        graphFilename=str(MODELS_DIR / "discogs-effnet-bs64-1.pb"),
+        graphFilename=_graph("discogs-effnet-bs64-1.pb"),
         output="PartitionedCall:1",
     )
     _genre_model = TensorflowPredict2D(
-        graphFilename=str(MODELS_DIR / "genre_discogs400-discogs-effnet-1.pb"),
+        graphFilename=_graph("genre_discogs400-discogs-effnet-1.pb"),
         input="serving_default_model_Placeholder",
         output="PartitionedCall:0",
     )
