@@ -193,7 +193,8 @@ public sealed class Downloader
         Action<string> onLine,
         CancellationToken ct,
         string? target = null,
-        string? format = null)
+        string? format = null,
+        bool downloadSections = true)
     {
         CheckDownloadDeps();
         target ??= ResolveTarget(query);
@@ -206,10 +207,11 @@ public sealed class Downloader
         {
             "--ignore-config", "--no-wait-for-video", "--ignore-errors",
             "--match-filter", MatchFilter,
-            "--download-sections", $"*0-{MaxAudioSeconds}",
             "--windows-filenames", "--restrict-filenames",
             "--ffmpeg-location", ffmpeg,
         };
+        if (downloadSections)
+            cmd.AddRange(["--download-sections", $"*0-{MaxAudioSeconds}"]);
         cmd.AddRange(JsRuntimeArgs());
         cmd.AddRange([
             "--extractor-args", "youtube:player_client=web_embedded,web,default,-android_vr",
@@ -264,6 +266,11 @@ public sealed class Downloader
         {
             saved = await EnsureMp3Async(saved, onLine, ct);
             return MetadataFromPath(saved, title, artist);
+        }
+        if (downloadSections && lines.Any(l => l.Contains("ffmpeg exited with code", StringComparison.OrdinalIgnoreCase)))
+        {
+            onLine("ffmpeg could not trim the download — retrying without a section cut.");
+            return await DownloadWithYtdlpAsync(query, outDir, onLine, ct, target, format, downloadSections: false);
         }
         if (liveRejected && !searching)
             throw new InvalidOperationException("yt-dlp skipped a livestream");
@@ -506,7 +513,7 @@ public sealed class Downloader
     {
         FindFfmpeg();
         if (JsRuntimeArgs().Count == 0)
-            throw new FileNotFoundException("No JavaScript runtime found. Install Node (or Deno/Bun) for YouTube downloads.");
+            throw new FileNotFoundException("No JavaScript runtime found. Install Deno 2.3+ (or Node 22+) for YouTube downloads.");
     }
 
     private static List<string> FindYtDlp()
@@ -531,18 +538,57 @@ public sealed class Downloader
         Which("ffmpeg") ?? Which("ffmpeg.exe")
         ?? throw new FileNotFoundException("ffmpeg not found. Install ffmpeg and add it to PATH.");
 
+    private static List<string>? _jsRuntimeArgs;
+
     private static List<string> JsRuntimeArgs()
     {
-        foreach (var name in new[] { "node", "deno", "bun", "node.exe", "deno.exe", "bun.exe" })
+        if (_jsRuntimeArgs is not null)
+            return _jsRuntimeArgs;
+
+        var deno = Which("deno") ?? Which("deno.exe");
+        if (deno is not null)
+            return _jsRuntimeArgs = JsRuntime("deno", deno);
+
+        var node = Which("node") ?? Which("node.exe") ?? Which("nodejs");
+        if (node is not null && RuntimeMajor(node) >= 22)
+            return _jsRuntimeArgs = JsRuntime("node", node);
+
+        var quickjs = Which("qjs") ?? Which("qjs.exe");
+        if (quickjs is not null)
+            return _jsRuntimeArgs = JsRuntime("quickjs", quickjs);
+
+        return _jsRuntimeArgs = [];
+    }
+
+    private static List<string> JsRuntime(string runtime, string path) =>
+        ["--js-runtimes", $"{runtime}:{path}", "--remote-components", "ejs:github"];
+
+    private static int RuntimeMajor(string path)
+    {
+        try
         {
-            var path = Which(name);
-            if (path is not null)
+            var psi = new ProcessStartInfo
             {
-                var runtime = name.Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
-                return ["--js-runtimes", $"{runtime}:{path}"];
-            }
+                FileName = path,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            psi.ArgumentList.Add("--version");
+            using var proc = Process.Start(psi);
+            if (proc is null)
+                return 0;
+            var text = proc.StandardOutput.ReadToEnd().Trim().TrimStart('v', 'V');
+            proc.WaitForExit(5000);
+            var dot = text.IndexOf('.');
+            var major = dot > 0 ? text[..dot] : text;
+            return int.TryParse(major, out var value) ? value : 0;
         }
-        return [];
+        catch
+        {
+            return 0;
+        }
     }
 
     private static string FindPython() =>

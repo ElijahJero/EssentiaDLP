@@ -25,13 +25,22 @@ def graph_urls(models: Path) -> dict[str, str]:
 
 
 def download_missing(models: Path) -> list[str]:
+    models.mkdir(parents=True, exist_ok=True)
     fetched: list[str] = []
     for name, url in graph_urls(models).items():
         dest = models / name
         if dest.is_file() and dest.stat().st_size > 0:
             continue
-        print(f"download {name}", flush=True)
-        urllib.request.urlretrieve(url, dest)
+        print(f"download {name}", file=sys.stderr, flush=True)
+        tmp = dest.with_suffix(dest.suffix + ".part")
+        try:
+            urllib.request.urlretrieve(url, tmp)
+            if not tmp.is_file() or tmp.stat().st_size == 0:
+                raise OSError(f"empty download for {name}")
+            tmp.replace(dest)
+        except Exception:
+            tmp.unlink(missing_ok=True)
+            raise
         fetched.append(name)
     return fetched
 

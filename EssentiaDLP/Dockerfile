@@ -2,8 +2,12 @@
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER root
+# Deno 2.3+ is the JavaScript runtime yt-dlp uses to solve YouTube challenges.
+# Debian's nodejs package is older than the Node 22 minimum, so it is not installed.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv ffmpeg nodejs \
+    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv ffmpeg ca-certificates curl unzip \
+    && curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh \
+    && /usr/local/bin/deno --version \
     && rm -rf /var/lib/apt/lists/*
 ENV ASPNETCORE_HTTP_PORTS=8182
 ENV DataDirectory=/data
@@ -27,7 +31,6 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY EssentiaDLP/analyzer /app/analyzer
 RUN python3 -m pip install --break-system-packages --no-cache-dir -r /app/analyzer/requirements.txt \
-    && python3 /app/analyzer/download_models.py /app/analyzer/models \
     && mkdir -p /data \
     && chown -R $APP_UID /app /data
 USER $APP_UID

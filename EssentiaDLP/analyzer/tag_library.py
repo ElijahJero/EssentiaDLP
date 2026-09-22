@@ -47,14 +47,39 @@ def _load_json(stem):
         return json.load(f)
 
 
+def _writable(directory: Path) -> bool:
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        probe = directory / ".write_probe"
+        probe.write_text("", encoding="utf-8")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def _prepare_model_dir() -> None:
+    global MODELS_DIR
+    from download_models import download_missing
+
+    source = MODELS_DIR
+    target = source if _writable(source) else Path(os.environ.get("ESSENTIA_MODEL_CACHE", "/tmp/essentia-models"))
+    if target != source:
+        target.mkdir(parents=True, exist_ok=True)
+        for meta in source.glob("*.json"):
+            dest = target / meta.name
+            if not dest.is_file() or dest.stat().st_size == 0:
+                dest.write_bytes(meta.read_bytes())
+        MODELS_DIR = target
+    fetched = download_missing(MODELS_DIR)
+    if fetched:
+        print("Downloaded Essentia graphs: " + ", ".join(fetched), file=sys.stderr, flush=True)
+
+
 def _graph(name: str) -> str:
     path = MODELS_DIR / name
     if not path.is_file() or path.stat().st_size == 0:
-        raise FileNotFoundError(
-            f"Tensorflow graph not found: {path}. "
-            "The .pb weights are not in git; run analyzer/download_models.py "
-            "or rebuild the image so the models are baked in."
-        )
+        raise FileNotFoundError(f"Tensorflow graph not found: {path}")
     return str(path)
 
 
@@ -93,6 +118,7 @@ def _ensure_models():
     if _embedding_model is not None:
         return
 
+    _prepare_model_dir()
     _configure_essentia_logging()
     from essentia.standard import TensorflowPredict2D, TensorflowPredictEffnetDiscogs
 
